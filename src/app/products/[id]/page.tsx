@@ -20,7 +20,6 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
-  const router = useRouter();
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
