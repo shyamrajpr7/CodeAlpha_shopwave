@@ -1,148 +1,96 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Package, Clock, CheckCircle, Truck, XCircle } from 'lucide-react';
-
-const statusConfig: Record<string, { icon: any; color: string; bg: string }> = {
-  pending: { icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
-  confirmed: { icon: CheckCircle, color: 'text-blue-600', bg: 'bg-blue-50' },
-  shipped: { icon: Truck, color: 'text-purple-600', bg: 'bg-purple-50' },
-  delivered: { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' },
-  cancelled: { icon: XCircle, color: 'text-red-600', bg: 'bg-red-50' },
-};
+import { useState, useEffect, Suspense } from 'react';
 
 function OrdersContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const newOrderId = searchParams.get('new');
-
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newOrder, setNewOrder] = useState<any>(null);
 
   useEffect(() => {
-    fetch('/api/orders')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.error) { router.push('/auth/login'); return; }
-        setOrders(data.orders || []);
-        if (newOrderId) {
-          const found = data.orders?.find((o: any) => o.id === newOrderId);
-          if (found) setNewOrder(found);
-        }
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [newOrderId, router]);
+    fetch('/api/orders').then(r => r.json()).then(d => { setOrders(d.orders || []); setLoading(false); });
+  }, []);
 
-  if (loading) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="h-10 skeleton w-48 mb-8" />
-        {[1, 2, 3].map((i) => <div key={i} className="h-32 skeleton rounded-2xl mb-4" />)}
+  const statusColor: Record<string, string> = {
+    pending: 'badge-trending',
+    processing: 'badge-popular',
+    shipped: 'badge-best',
+    delivered: 'badge-new',
+    cancelled: 'badge-sale',
+  };
+
+  if (loading) return (
+    <div className="min-h-screen pt-24 pb-12 px-4 relative">
+      <div className="mesh-gradient" />
+      <div className="max-w-4xl mx-auto">
+        <div className="skeleton h-10 w-48 mb-8" />
+        <div className="space-y-4">{[1, 2, 3].map(i => <div key={i} className="glass-card rounded-2xl p-6"><div className="flex justify-between mb-4"><div className="skeleton h-5 w-32" /><div className="skeleton h-5 w-20 rounded-full" /></div><div className="skeleton h-4 w-48 mb-3" /><div className="skeleton h-8 w-full" /></div>)}</div>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 page-enter">
-      {newOrder && (
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-6 mb-8 animate-slide-down">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <CheckCircle className="w-6 h-6 text-green-600" />
+    <div className="min-h-screen pt-24 pb-12 px-4 relative">
+      <div className="mesh-gradient" />
+      <div className="max-w-4xl mx-auto animate-fade-up">
+        <h1 className="text-3xl md:text-4xl font-extrabold mb-2" style={{ fontFamily: 'var(--font-syne)' }}>
+          <span className="text-gradient">Your Orders</span>
+        </h1>
+        <p className="text-white/30 text-sm mb-8">{orders.length} order{orders.length !== 1 ? 's' : ''} total</p>
+
+        {orders.length === 0 ? (
+          <div className="glass-card rounded-3xl p-16 text-center animate-scale-in">
+            <div className="w-24 h-24 rounded-full bg-violet-500/10 flex items-center justify-center mx-auto mb-6">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-violet-400"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
             </div>
-            <div>
-              <h3 className="font-semibold text-green-900 text-lg">Order Placed Successfully!</h3>
-              <p className="text-green-700 text-sm mt-1">
-                Your order <strong>{newOrder.orderNumber}</strong> has been confirmed.
-                Total: <strong>${newOrder.total.toFixed(2)}</strong>
-              </p>
-              <button
-                onClick={() => setNewOrder(null)}
-                className="text-green-600 text-sm font-medium mt-2 hover:underline"
-              >
-                Dismiss
-              </button>
-            </div>
+            <h2 className="text-2xl font-bold mb-2">No orders yet</h2>
+            <p className="text-white/30 mb-8">Start shopping to see your orders here.</p>
+            <Link href="/products"><button className="btn-glow px-8 py-3"><span>Start Shopping</span></button></Link>
           </div>
-        </div>
-      )}
-
-      <h1 className="font-display text-3xl font-bold text-gray-900 mb-2">Your Orders</h1>
-      <p className="text-gray-500 mb-8">{orders.length} order{orders.length !== 1 ? 's' : ''}</p>
-
-      {orders.length === 0 ? (
-        <div className="text-center py-20">
-          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Package className="w-12 h-12 text-gray-300" />
-          </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No orders yet</h3>
-          <p className="text-gray-500 mb-8">Start shopping to see your orders here</p>
-          <Link href="/products" className="btn-primary">Browse Products</Link>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {orders.map((order) => {
-            const status = statusConfig[order.status] || statusConfig.pending;
-            const StatusIcon = status.icon;
-            return (
-              <div key={order.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                <div className="p-4 md:p-6">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                    <div>
-                      <div className="flex items-center gap-3">
-                        <h3 className="font-semibold text-gray-900">{order.orderNumber}</h3>
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${status.color} ${status.bg}`}>
-                          <StatusIcon className="w-3 h-3" />
-                          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {new Date(order.createdAt).toLocaleDateString('en-US', {
-                          year: 'numeric', month: 'long', day: 'numeric',
-                        })}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xl font-bold text-gray-900">${order.total.toFixed(2)}</p>
-                      <p className="text-xs text-gray-500">{order.items.length} item{order.items.length !== 1 ? 's' : ''}</p>
-                    </div>
+        ) : (
+          <div className="space-y-4">
+            {orders.map((order, i) => (
+              <div key={order.id} className="glass-card rounded-2xl p-6 animate-fade-up" style={{ animationDelay: `${i * 100}ms` }}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                  <div>
+                    <h3 className="font-bold text-base">Order #{order.orderNumber}</h3>
+                    <p className="text-xs text-white/25 mt-1">{new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                   </div>
+                  <span className={`badge-glow ${statusColor[order.status] || 'badge-popular'} self-start`}>{order.status}</span>
+                </div>
 
-                  <div className="flex items-center gap-3 overflow-x-auto pb-2">
-                    {order.items.map((item: any, i: number) => (
-                      <div key={i} className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2 flex-shrink-0">
-                        <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
-                          <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-medium text-gray-900 truncate max-w-[120px]">{item.name}</p>
-                          <p className="text-xs text-gray-500">x{item.quantity}</p>
-                        </div>
+                <div className="space-y-2.5 mb-4">
+                  {order.items?.map((item: any) => (
+                    <div key={item.id} className="flex items-center gap-3 bg-white/2 rounded-xl p-3">
+                      <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+                        <img src={item.product?.image} alt="" className="w-full h-full object-cover" />
                       </div>
-                    ))}
-                  </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium truncate">{item.product?.name}</div>
+                        <div className="text-xs text-white/25">Qty: {item.quantity}</div>
+                      </div>
+                      <div className="text-sm font-bold">${(item.price * item.quantity).toFixed(2)}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="line-glow mb-3" />
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-white/40">{order.items?.length || 0} item{(order.items?.length || 0) !== 1 ? 's' : ''}</span>
+                  <span className="text-lg font-extrabold text-gradient">${order.total.toFixed(2)}</span>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 export default function OrdersPage() {
   return (
-    <Suspense fallback={
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="h-10 skeleton w-48 mb-8" />
-        {[1, 2, 3].map((i) => <div key={i} className="h-32 skeleton rounded-2xl mb-4" />)}
-      </div>
-    }>
+    <Suspense fallback={<div className="min-h-screen pt-24 pb-12 px-4 relative"><div className="mesh-gradient" /><div className="max-w-4xl mx-auto"><div className="skeleton h-10 w-48 mb-8" /></div></div>}>
       <OrdersContent />
     </Suspense>
   );

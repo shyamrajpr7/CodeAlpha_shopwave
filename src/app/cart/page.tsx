@@ -1,153 +1,130 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useState, useEffect } from 'react';
 
 export default function CartPage() {
-  const [cart, setCart] = useState<any[]>([]);
-  const [total, setTotal] = useState(0);
-  const [count, setCount] = useState(0);
+  const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState<number | null>(null);
 
-  const fetchCart = async () => {
-    try {
-      const res = await fetch('/api/cart');
-      const data = await res.json();
-      setCart(data.cart || []);
-      setTotal(data.total || 0);
-      setCount(data.count || 0);
-    } catch {}
-    setLoading(false);
+  useEffect(() => {
+    fetch('/api/cart').then(r => r.json()).then(d => { setItems(d.items || []); setLoading(false); });
+  }, []);
+
+  const updateQty = async (productId: number, qty: number) => {
+    setUpdating(productId);
+    await fetch('/api/cart/update', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId, quantity: qty }) });
+    if (qty <= 0) setItems(items.filter(i => i.productId !== productId));
+    else setItems(items.map(i => i.productId === productId ? { ...i, quantity: qty } : i));
+    setUpdating(null);
   };
 
-  useEffect(() => { fetchCart(); }, []);
-
-  const updateQuantity = async (productId: string, quantity: number) => {
-    const res = await fetch('/api/cart/update', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ productId, quantity }),
-    });
-    const data = await res.json();
-    if (data.success) fetchCart();
+  const remove = async (productId: number) => {
+    await fetch(`/api/cart/remove/${productId}`, { method: 'DELETE' });
+    setItems(items.filter(i => i.productId !== productId));
   };
 
-  const removeItem = async (productId: string) => {
-    const res = await fetch(`/api/cart/remove/${productId}`, { method: 'DELETE' });
-    const data = await res.json();
-    if (data.success) {
-      toast.success('Item removed from cart');
-      fetchCart();
-    }
-  };
+  const subtotal = items.reduce((s, i) => s + (i.product?.price || 0) * i.quantity, 0);
+  const shipping = subtotal > 50 ? 0 : 9.99;
+  const total = subtotal + shipping;
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="h-10 skeleton w-48 mb-8" />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-4">
-            {[1, 2, 3].map((i) => <div key={i} className="h-28 skeleton rounded-2xl" />)}
+      <div className="min-h-screen pt-24 pb-12 px-4 relative">
+        <div className="mesh-gradient" />
+        <div className="max-w-4xl mx-auto">
+          <div className="skeleton h-10 w-48 mb-8" />
+          <div className="space-y-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="glass-card rounded-2xl p-6 flex gap-5">
+                <div className="skeleton w-24 h-24 rounded-xl flex-shrink-0" />
+                <div className="flex-1"><div className="skeleton h-5 w-3/4 mb-3" /><div className="skeleton h-4 w-1/2" /></div>
+              </div>
+            ))}
           </div>
-          <div className="h-64 skeleton rounded-2xl" />
         </div>
-      </div>
-    );
-  }
-
-  if (cart.length === 0) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center page-enter">
-        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-          <ShoppingBag className="w-12 h-12 text-gray-300" />
-        </div>
-        <h2 className="font-display text-2xl font-bold text-gray-900 mb-2">Your cart is empty</h2>
-        <p className="text-gray-500 mb-8">Looks like you haven&apos;t added anything yet</p>
-        <Link href="/products" className="btn-primary">
-          Start Shopping <ArrowRight className="w-4 h-4" />
-        </Link>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 page-enter">
-      <h1 className="font-display text-3xl font-bold text-gray-900 mb-8">Your Cart ({count} items)</h1>
+    <div className="min-h-screen pt-24 pb-12 px-4 relative">
+      <div className="mesh-gradient" />
+      <div className="max-w-4xl mx-auto animate-fade-up">
+        <h1 className="text-3xl md:text-4xl font-extrabold mb-8" style={{ fontFamily: 'var(--font-syne)' }}>
+          <span className="text-gradient">Your Cart</span>
+        </h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-4">
-          {cart.map((item: any) => (
-            <div key={item.id || item.productId} className="bg-white rounded-2xl p-4 md:p-6 flex gap-4 border border-gray-100">
-              <div className="w-24 h-24 md:w-32 md:h-32 bg-gray-50 rounded-xl overflow-hidden flex-shrink-0">
-                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-gray-900 truncate">{item.name}</h3>
-                <p className="text-brand-600 font-bold text-lg mt-1">${item.price.toFixed(2)}</p>
-                <div className="flex items-center justify-between mt-3">
-                  <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
-                    <button
-                      onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                      className="px-3 py-1.5 text-gray-500 hover:bg-gray-50"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </button>
-                    <span className="px-3 py-1.5 font-medium text-sm min-w-[2rem] text-center">{item.quantity}</span>
-                    <button
-                      onClick={() => updateQuantity(item.productId, Math.min(item.stock, item.quantity + 1))}
-                      className="px-3 py-1.5 text-gray-500 hover:bg-gray-50"
-                      disabled={item.quantity >= item.stock}
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <button
-                    onClick={() => removeItem(item.productId)}
-                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-              <div className="hidden md:block text-right">
-                <p className="font-bold text-gray-900">${(item.price * item.quantity).toFixed(2)}</p>
-              </div>
+        {items.length === 0 ? (
+          <div className="glass-card rounded-3xl p-16 text-center animate-scale-in">
+            <div className="w-24 h-24 rounded-full bg-violet-500/10 flex items-center justify-center mx-auto mb-6">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-violet-400">
+                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
+              </svg>
             </div>
-          ))}
-        </div>
-
-        {/* Order Summary */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-2xl p-6 border border-gray-100 sticky top-24">
-            <h3 className="font-display text-lg font-bold text-gray-900 mb-4">Order Summary</h3>
-            <div className="space-y-3 mb-6">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Subtotal ({count} items)</span>
-                <span className="font-medium">${total.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Shipping</span>
-                <span className="font-medium text-green-600">{total >= 50 ? 'Free' : '$9.99'}</span>
-              </div>
-              <div className="border-t border-gray-100 pt-3">
-                <div className="flex justify-between">
-                  <span className="font-semibold text-gray-900">Total</span>
-                  <span className="font-bold text-xl text-gray-900">
-                    ${(total >= 50 ? total : total + 9.99).toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <Link href="/checkout" className="btn-primary w-full justify-center py-3.5 text-base">
-              Proceed to Checkout <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link href="/products" className="block text-center text-sm text-brand-600 font-medium mt-4 hover:text-brand-700">
-              Continue Shopping
+            <h2 className="text-2xl font-bold mb-2">Your cart is empty</h2>
+            <p className="text-white/30 mb-8">Discover something amazing to add to your collection.</p>
+            <Link href="/products">
+              <button className="btn-glow px-8 py-3.5"><span>Explore Products</span></button>
             </Link>
           </div>
-        </div>
+        ) : (
+          <div className="grid lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-4">
+              {items.map((item, i) => (
+                <div
+                  key={item.productId}
+                  className="glass-card rounded-2xl p-5 flex gap-5 items-center animate-fade-up"
+                  style={{ animationDelay: `${i * 100}ms` }}
+                >
+                  <div className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-white/5">
+                    <img src={item.product?.image} alt={item.product?.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <Link href={`/products/${item.productId}`}>
+                      <h3 className="font-bold text-sm truncate hover:text-violet-300 transition-colors">{item.product?.name}</h3>
+                    </Link>
+                    <p className="text-white/30 text-xs mt-1">{item.product?.category}</p>
+                    <div className="flex items-center gap-3 mt-3">
+                      <div className="flex items-center border border-white/10 rounded-lg overflow-hidden">
+                        <button onClick={() => updateQty(item.productId, item.quantity - 1)} className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 transition-all text-sm">-</button>
+                        <span className="w-8 h-8 flex items-center justify-center text-sm font-medium">{updating === item.productId ? '...' : item.quantity}</span>
+                        <button onClick={() => updateQty(item.productId, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 transition-all text-sm">+</button>
+                      </div>
+                      <button onClick={() => remove(item.productId)} className="text-white/20 hover:text-red-400 transition-colors">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-lg font-extrabold">${(item.product?.price * item.quantity).toFixed(2)}</div>
+                    <div className="text-xs text-white/25">${item.product?.price.toFixed(2)} each</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="lg:col-span-1">
+              <div className="glass-card rounded-2xl p-6 sticky top-28 animate-fade-up stagger-3">
+                <h3 className="font-bold text-lg mb-5">Order Summary</h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between"><span className="text-white/40">Subtotal ({items.reduce((s, i) => s + i.quantity, 0)} items)</span><span>${subtotal.toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span className="text-white/40">Shipping</span><span className={shipping === 0 ? 'text-green-400 font-semibold' : ''}>{shipping === 0 ? 'Free' : `$${shipping.toFixed(2)}`}</span></div>
+                  {shipping > 0 && <p className="text-xs text-violet-300/60">Add ${(50 - subtotal).toFixed(2)} more for free shipping</p>}
+                  <div className="line-glow my-4" />
+                  <div className="flex justify-between text-lg font-extrabold"><span>Total</span><span className="text-gradient">${total.toFixed(2)}</span></div>
+                </div>
+                <Link href="/checkout">
+                  <button className="btn-glow w-full justify-center py-4 mt-6 text-base"><span>Proceed to Checkout</span></button>
+                </Link>
+                <Link href="/products" className="block text-center mt-4 text-sm text-white/30 hover:text-violet-300 transition-colors">
+                  Continue Shopping
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
