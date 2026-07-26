@@ -8,25 +8,27 @@ export async function GET(req: NextRequest) {
   const search = searchParams.get('search');
   const limit = searchParams.get('limit');
 
-  const where: any = {};
+  let products = await prisma.product.findMany();
+
   if (category && category !== 'All') {
-    where.category = category;
+    products = products.filter(p => p.category === category);
   }
+
   if (search) {
-    where.OR = [
-      { name: { contains: search, mode: 'insensitive' } },
-      { description: { contains: search, mode: 'insensitive' } },
-      { category: { contains: search, mode: 'insensitive' } },
-    ];
+    const q = search.toLowerCase();
+    products = products.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      p.description.toLowerCase().includes(q) ||
+      p.category.toLowerCase().includes(q)
+    );
   }
 
-  const orderBy: any = {};
-  if (sort === 'price-asc') orderBy.price = 'asc';
-  else if (sort === 'price-desc') orderBy.price = 'desc';
-  else if (sort === 'rating') orderBy.rating = 'desc';
-  else orderBy.createdAt = 'desc';
+  if (sort === 'price-asc') products.sort((a, b) => a.price - b.price);
+  else if (sort === 'price-desc') products.sort((a, b) => b.price - a.price);
+  else if (sort === 'rating') products.sort((a, b) => b.rating - a.rating);
+  else products.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const take = limit ? parseInt(limit) : undefined;
-  const products = await prisma.product.findMany({ where, orderBy, take });
+  if (limit) products = products.slice(0, parseInt(limit));
+
   return NextResponse.json({ products, total: products.length });
 }

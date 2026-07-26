@@ -127,38 +127,29 @@ const products = [
 ];
 
 async function main() {
-  console.log('Seeding database...');
+  console.log('Seeding MongoDB...');
 
   const hashedPassword = await bcrypt.hash('password123', 10);
 
-  await prisma.user.upsert({
-    where: { email: 'admin@shopwave.com' },
-    update: {},
-    create: {
-      name: 'Admin',
-      email: 'admin@shopwave.com',
-      password: hashedPassword,
-      role: 'admin',
-    },
-  });
+  const existingAdmin = await prisma.user.findUnique({ where: { email: 'admin@shopwave.com' } });
+  if (!existingAdmin) {
+    await prisma.user.create({ data: { name: 'Admin', email: 'admin@shopwave.com', password: hashedPassword, role: 'admin' } });
+    console.log('Created admin user');
+  }
 
-  await prisma.user.upsert({
-    where: { email: 'demo@shopwave.com' },
-    update: {},
-    create: {
-      name: 'Demo User',
-      email: 'demo@shopwave.com',
-      password: hashedPassword,
-      role: 'customer',
-    },
-  });
+  const existingDemo = await prisma.user.findUnique({ where: { email: 'demo@shopwave.com' } });
+  if (!existingDemo) {
+    await prisma.user.create({ data: { name: 'Demo User', email: 'demo@shopwave.com', password: hashedPassword, role: 'customer' } });
+    console.log('Created demo user');
+  }
 
   for (const product of products) {
-    await prisma.product.upsert({
-      where: { slug: product.slug },
-      update: product,
-      create: product,
-    });
+    const existing = await prisma.product.findUnique({ where: { slug: product.slug } });
+    if (existing) {
+      await prisma.product.update({ where: { slug: product.slug }, data: product });
+    } else {
+      await prisma.product.create({ data: product });
+    }
   }
 
   console.log('Database seeded successfully!');

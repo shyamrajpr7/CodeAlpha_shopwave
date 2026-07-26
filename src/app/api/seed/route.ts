@@ -26,7 +26,7 @@ export async function GET() {
     await prisma.user.create({ data: { name: 'Demo User', email: 'demo@shopwave.com', password: hashed, role: 'customer' } });
 
     for (const product of products) {
-      await prisma.product.upsert({ where: { slug: product.slug }, update: product, create: product });
+      await prisma.product.create({ data: product });
     }
 
     return NextResponse.json({ message: 'Database seeded successfully', seeded: true });
