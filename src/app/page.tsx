@@ -10,13 +10,15 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/products')
-      .then((r) => r.json())
-      .then((data) => {
-        setProducts(data.products || []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    fetch('/api/seed').finally(() => {
+      fetch('/api/products')
+        .then((r) => r.json())
+        .then((data) => {
+          setProducts(data.products || []);
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    });
   }, []);
 
   return (

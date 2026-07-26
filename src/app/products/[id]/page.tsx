@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import { Star, ShoppingCart, ChevronLeft, Check, Truck, Shield, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -16,8 +16,10 @@ function StarRating({ rating, size = 'md' }: { rating: number; size?: 'sm' | 'md
   );
 }
 
-export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function ProductDetailPage() {
+  const router = useRouter();
+  const params = useParams();
+  const id = params.id as string;
   const router = useRouter();
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);

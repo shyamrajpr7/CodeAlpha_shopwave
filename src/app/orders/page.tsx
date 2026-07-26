@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Package, ChevronRight, Clock, CheckCircle, Truck, XCircle } from 'lucide-react';
+import { Package, Clock, CheckCircle, Truck, XCircle } from 'lucide-react';
 
 const statusConfig: Record<string, { icon: any; color: string; bg: string }> = {
   pending: { icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
@@ -13,7 +13,7 @@ const statusConfig: Record<string, { icon: any; color: string; bg: string }> = {
   cancelled: { icon: XCircle, color: 'text-red-600', bg: 'bg-red-50' },
 };
 
-export default function OrdersPage() {
+function OrdersContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const newOrderId = searchParams.get('new');
@@ -48,7 +48,6 @@ export default function OrdersPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 page-enter">
-      {/* Order Confirmation */}
       {newOrder && (
         <div className="bg-green-50 border border-green-200 rounded-2xl p-6 mb-8 animate-slide-down">
           <div className="flex items-start gap-4">
@@ -121,7 +120,7 @@ export default function OrdersPage() {
                         </div>
                         <div>
                           <p className="text-xs font-medium text-gray-900 truncate max-w-[120px]">{item.name}</p>
-                          <p className="text-xs text-gray-500">×{item.quantity}</p>
+                          <p className="text-xs text-gray-500">x{item.quantity}</p>
                         </div>
                       </div>
                     ))}
@@ -133,5 +132,18 @@ export default function OrdersPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function OrdersPage() {
+  return (
+    <Suspense fallback={
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="h-10 skeleton w-48 mb-8" />
+        {[1, 2, 3].map((i) => <div key={i} className="h-32 skeleton rounded-2xl mb-4" />)}
+      </div>
+    }>
+      <OrdersContent />
+    </Suspense>
   );
 }
