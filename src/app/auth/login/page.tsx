@@ -16,10 +16,10 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch('/api/auth/[...nextauth]', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ action: 'login', email, password }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Login failed'); setLoading(false); return; }
@@ -66,11 +66,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-white/5 text-center">
-            <p className="text-white/25 text-sm">
-              Demo: <span className="text-violet-300 font-medium">demo@shopwave.com</span> / <span className="text-violet-300 font-medium">password123</span>
-            </p>
-          </div>
+
         </div>
 
         <p className="text-center mt-6 text-sm text-white/25">

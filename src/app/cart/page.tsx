@@ -2,17 +2,18 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { handleImageError } from '@/lib/utils';
 
 export default function CartPage() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState<number | null>(null);
+  const [updating, setUpdating] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/cart').then(r => r.json()).then(d => { setItems(d.items || []); setLoading(false); });
   }, []);
 
-  const updateQty = async (productId: number, qty: number) => {
+  const updateQty = async (productId: string, qty: number) => {
     setUpdating(productId);
     await fetch('/api/cart/update', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId, quantity: qty }) });
     if (qty <= 0) setItems(items.filter(i => i.productId !== productId));
@@ -20,7 +21,7 @@ export default function CartPage() {
     setUpdating(null);
   };
 
-  const remove = async (productId: number) => {
+  const remove = async (productId: string) => {
     await fetch(`/api/cart/remove/${productId}`, { method: 'DELETE' });
     setItems(items.filter(i => i.productId !== productId));
   };
@@ -79,7 +80,7 @@ export default function CartPage() {
                   style={{ animationDelay: `${i * 100}ms` }}
                 >
                   <div className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-white/5">
-                    <img src={item.product?.image} alt={item.product?.name} className="w-full h-full object-cover" />
+                    <img src={item.product?.image} alt={item.product?.name} className="w-full h-full object-cover" onError={handleImageError} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <Link href={`/products/${item.productId}`}>

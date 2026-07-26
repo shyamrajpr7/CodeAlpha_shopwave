@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { handleImageError } from '@/lib/utils';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -99,7 +100,7 @@ export default function CheckoutPage() {
                 {items.map(item => (
                   <div key={item.productId} className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-white/5">
-                      <img src={item.product?.image} alt="" className="w-full h-full object-cover" />
+                      <img src={item.product?.image} alt="" className="w-full h-full object-cover" onError={handleImageError} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-medium truncate">{item.product?.name}</div>

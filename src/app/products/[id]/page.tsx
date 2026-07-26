@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { handleImageError } from '@/lib/utils';
 
 export default function ProductDetailPage() {
   const router = useRouter();
@@ -82,7 +83,7 @@ export default function ProductDetailPage() {
             <div className="card-3d-inner relative rounded-3xl overflow-hidden glass-card">
               <div className="card-glow rounded-3xl" />
               <div className="aspect-square relative">
-                <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                <img src={product.image} alt={product.name} className="w-full h-full object-cover" onError={handleImageError} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
                 {product.category && (
                   <div className="absolute top-5 left-5">
@@ -162,7 +163,7 @@ export default function ProductDetailPage() {
               {relatedProducts.map((rp: any) => (
                 <Link key={rp.id} href={`/products/${rp.id}`} className="glass-card rounded-2xl overflow-hidden group hover-lift">
                   <div className="aspect-[4/3] overflow-hidden">
-                    <img src={rp.image} alt={rp.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                    <img src={rp.image} alt={rp.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" onError={handleImageError} />
                   </div>
                   <div className="p-4">
                     <h3 className="font-bold text-sm group-hover:text-violet-300 transition-colors">{rp.name}</h3>

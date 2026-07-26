@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect, Suspense } from 'react';
+import { handleImageError } from '@/lib/utils';
 
 function OrdersContent() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -63,7 +64,7 @@ function OrdersContent() {
                   {order.items?.map((item: any) => (
                     <div key={item.id} className="flex items-center gap-3 bg-white/2 rounded-xl p-3">
                       <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
-                        <img src={item.product?.image} alt="" className="w-full h-full object-cover" />
+                        <img src={item.product?.image} alt="" className="w-full h-full object-cover" onError={handleImageError} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-medium truncate">{item.product?.name}</div>

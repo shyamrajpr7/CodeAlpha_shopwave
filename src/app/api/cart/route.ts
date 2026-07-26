@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     include: { product: true },
   });
 
-  const cart = items.map((item) => ({
+  const mappedItems = items.map((item) => ({
     id: item.id,
     productId: item.productId,
     name: item.product.name,
@@ -25,8 +25,8 @@ export async function GET(req: NextRequest) {
     stock: item.product.stock,
   }));
 
-  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const total = mappedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const count = mappedItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  return NextResponse.json({ cart, total: parseFloat(total.toFixed(2)), count });
+  return NextResponse.json({ items: mappedItems, cart: mappedItems, total: parseFloat(total.toFixed(2)), count });
 }

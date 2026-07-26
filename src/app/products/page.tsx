@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { handleImageError } from '@/lib/utils';
 
 function ProductsContent() {
   const searchParams = useSearchParams();
@@ -54,10 +55,9 @@ function ProductsContent() {
           </select>
           <select value={sort} onChange={e => setSort(e.target.value)} className="input-dark max-w-xs cursor-pointer appearance-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' fill=\'rgba(255,255,255,0.3)\' viewBox=\'0 0 16 16\'%3E%3Cpath d=\'M8 11L3 6h10z\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}>
             <option value="">Sort By</option>
-            <option value="price_asc">Price: Low to High</option>
-            <option value="price_desc">Price: High to Low</option>
-            <option value="name_asc">Name: A-Z</option>
-            <option value="newest">Newest First</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+            <option value="rating">Top Rated</option>
           </select>
           <div className="flex gap-1 glass rounded-xl p-1 self-start">
             {[
@@ -95,7 +95,7 @@ function ProductsContent() {
                   <div className="card-glow rounded-2xl" />
                   <Link href={`/products/${product.id}`}>
                     <div className={`relative overflow-hidden ${viewMode === 'grid' ? 'aspect-square' : 'w-48 flex-shrink-0'}`}>
-                      <img src={product.image} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                      <img src={product.image} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" onError={handleImageError} />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                     </div>
                   </Link>

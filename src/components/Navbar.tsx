@@ -2,24 +2,27 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Navbar() {
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [cartCount, setCartCount] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    fetch('/api/auth/me').then(r => r.json()).then(d => { if (d.user) setUser(d.user); });
-    fetch('/api/cart').then(r => r.json()).then(d => { setCartCount(d.items?.reduce((s: number, i: any) => s + i.quantity, 0) || 0); });
+    fetch('/api/auth/[...nextauth]').then(r => r.json()).then(d => { if (d.user) setUser(d.user); }).catch(() => {});
+    fetch('/api/cart').then(r => r.json()).then(d => { setCartCount(d.count || d.items?.reduce((s: number, i: any) => s + i.quantity, 0) || 0); }).catch(() => {});
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   const logout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    await fetch('/api/auth/[...nextauth]', { method: 'DELETE' });
     setUser(null);
     window.location.href = '/';
   };
@@ -50,10 +53,13 @@ export default function Navbar() {
         </div>
 
         <div className="hidden md:block relative w-64">
-          <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input
             type="text"
             placeholder="Search products..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && searchQuery.trim()) { router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`); } }}
             className="input-dark pl-10 py-2.5 text-sm rounded-xl"
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setSearchFocused(false)}
@@ -108,6 +114,13 @@ export default function Navbar() {
               {href === '/' ? 'Home' : href.slice(1).charAt(0).toUpperCase() + href.slice(2)}
             </Link>
           ))}
+          {!user && (
+            <>
+              <div className="line-glow my-2" />
+              <Link href="/auth/login" onClick={() => setMobileOpen(false)} className="block px-4 py-3 rounded-xl text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-all">Login</Link>
+              <Link href="/auth/register" onClick={() => setMobileOpen(false)} className="block px-4 py-3 rounded-xl text-sm font-medium text-violet-300 hover:text-violet-200 hover:bg-violet-500/5 transition-all">Sign Up</Link>
+            </>
+          )}
         </div>
       )}
     </nav>
