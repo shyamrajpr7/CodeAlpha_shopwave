@@ -25,7 +25,11 @@ export default function LoginPage() {
       if (!res.ok) { setError(data.error || 'Login failed'); setLoading(false); return; }
       router.push('/');
       window.location.reload();
-    } catch { setError('Something went wrong'); setLoading(false); }
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err?.message || 'Something went wrong');
+      setLoading(false);
+    }
   };
 
   return (
