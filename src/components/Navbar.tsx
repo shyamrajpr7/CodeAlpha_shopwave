@@ -2,16 +2,12 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 
 export default function Navbar() {
-  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [cartCount, setCartCount] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [searchFocused, setSearchFocused] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
@@ -51,23 +47,6 @@ export default function Navbar() {
               {l.label}
             </Link>
           ))}
-        </div>
-
-        <div className="hidden md:block relative w-64">
-          <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input
-            type="text"
-            placeholder="Search products..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && searchQuery.trim()) { router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`); } }}
-            className="input-dark pl-10 py-2.5 text-sm rounded-xl"
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-          />
-          {searchFocused && (
-            <div className="absolute inset-0 rounded-xl bg-violet-500/10 -z-10 animate-pulse" />
-          )}
         </div>
 
         <div className="flex items-center gap-2">

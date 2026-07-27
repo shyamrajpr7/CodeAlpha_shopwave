@@ -6,13 +6,15 @@ export async function GET(req: NextRequest) {
   const category = searchParams.get('category');
   const sort = searchParams.get('sort');
   const search = searchParams.get('search');
-  const limit = searchParams.get('limit');
+  const page = parseInt(searchParams.get('page') || '1');
+  const limit = parseInt(searchParams.get('limit') || '24');
 
-  let products = await prisma.product.findMany();
-
+  const where: any = {};
   if (category && category !== 'All') {
-    products = products.filter(p => p.category === category);
+    where.category = category;
   }
+
+  let products = await prisma.product.findMany({ where, orderBy: { createdAt: 'desc' } });
 
   if (search) {
     const q = search.toLowerCase();
@@ -26,9 +28,18 @@ export async function GET(req: NextRequest) {
   if (sort === 'price-asc') products.sort((a, b) => a.price - b.price);
   else if (sort === 'price-desc') products.sort((a, b) => b.price - a.price);
   else if (sort === 'rating') products.sort((a, b) => b.rating - a.rating);
-  else products.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  else if (sort === 'reviews') products.sort((a, b) => b.reviews - a.reviews);
 
-  if (limit) products = products.slice(0, parseInt(limit));
+  const total = products.length;
+  const totalPages = Math.ceil(total / limit);
+  const skip = (page - 1) * limit;
+  const paged = products.slice(skip, skip + limit);
 
-  return NextResponse.json({ products, total: products.length });
+  return NextResponse.json({
+    products: paged,
+    total,
+    page,
+    totalPages,
+    hasMore: skip + paged.length < total,
+  });
 }

@@ -12,27 +12,44 @@ function ProductsContent() {
 
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [category, setCategory] = useState(searchParams.get('category') || '');
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [sort, setSort] = useState('');
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
   const [showFilters, setShowFilters] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
 
-  const fetchProducts = useCallback(async (q: string, cat: string, s: string) => {
-    setLoading(true);
+  const fetchProducts = useCallback(async (q: string, cat: string, s: string, p: number, append: boolean) => {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
+
     const params = new URLSearchParams();
     if (cat) params.set('category', cat);
     if (q) params.set('search', q);
     if (s) params.set('sort', s);
-    params.set('limit', '100');
+    params.set('page', String(p));
+    params.set('limit', '24');
+
     try {
       const res = await fetch(`/api/products?${params}`);
       const data = await res.json();
-      setProducts(data.products || []);
+      if (append) {
+        setProducts(prev => [...prev, ...(data.products || [])]);
+      } else {
+        setProducts(data.products || []);
+      }
+      setTotal(data.total || 0);
+      setTotalPages(data.totalPages || 1);
+      setHasMore(data.hasMore || false);
     } catch {
-      setProducts([]);
+      if (!append) setProducts([]);
     }
     setLoading(false);
+    setLoadingMore(false);
   }, []);
 
   useEffect(() => {
@@ -43,8 +60,15 @@ function ProductsContent() {
   }, [searchParams]);
 
   useEffect(() => {
-    fetchProducts(search, category, sort);
+    setPage(1);
+    fetchProducts(search, category, sort, 1, false);
   }, [search, category, sort, fetchProducts]);
+
+  const loadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchProducts(search, category, sort, nextPage, true);
+  };
 
   const filteredProducts = products.filter(p => p.price >= priceRange[0] && p.price <= priceRange[1]);
 
@@ -52,8 +76,10 @@ function ProductsContent() {
     setSearch('');
     setCategory('');
     setSort('');
-    setPriceRange([0, 1000]);
+    setPriceRange([0, 10000]);
   };
+
+  const formatNum = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
 
   return (
     <div className="min-h-screen pt-24 pb-12 px-4 relative">
@@ -64,7 +90,7 @@ function ProductsContent() {
           <h1 className="text-3xl md:text-4xl font-extrabold" style={{ fontFamily: 'var(--font-syne)' }}>
             <span className="text-gradient">{search ? `Results for "${search}"` : category || 'All Products'}</span>
           </h1>
-          <p className="text-white/30 mt-2 text-sm">{filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found</p>
+          <p className="text-white/30 mt-2 text-sm">{total.toLocaleString()} product{total !== 1 ? 's' : ''} found</p>
         </div>
 
         <div className="relative mb-6 max-w-2xl">
@@ -97,10 +123,10 @@ function ProductsContent() {
 
             <div className="glass-card rounded-2xl p-5">
               <h3 className="font-bold text-sm mb-4 text-white/60 uppercase tracking-wider">Price Range</h3>
-              <input type="range" min={0} max={1000} value={priceRange[1]} onChange={e => setPriceRange([0, parseInt(e.target.value)])} className="w-full accent-violet-500" />
+              <input type="range" min={0} max={10000} step={50} value={priceRange[1]} onChange={e => setPriceRange([0, parseInt(e.target.value)])} className="w-full accent-violet-500" />
               <div className="flex justify-between text-xs text-white/30 mt-2">
                 <span>$0</span>
-                <span>${priceRange[1]}</span>
+                <span>${priceRange[1].toLocaleString()}</span>
               </div>
             </div>
 
@@ -112,6 +138,8 @@ function ProductsContent() {
                   { value: 'price-asc', label: 'Price: Low to High' },
                   { value: 'price-desc', label: 'Price: High to Low' },
                   { value: 'rating', label: 'Customer Rating' },
+                  { value: 'reviews', label: 'Most Reviews' },
+                  { value: 'newest', label: 'Newest First' },
                 ].map(s => (
                   <button key={s.value} onClick={() => setSort(s.value)} className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-all ${sort === s.value ? 'bg-violet-500/20 text-violet-300 font-semibold' : 'text-white/40 hover:text-white hover:bg-white/5'}`}>
                     {s.label}
@@ -120,7 +148,7 @@ function ProductsContent() {
               </div>
             </div>
 
-            {(search || category || sort || priceRange[1] < 1000) && (
+            {(search || category || sort || priceRange[1] < 10000) && (
               <button onClick={handleClearFilters} className="w-full px-4 py-2.5 rounded-xl text-sm font-medium text-violet-300 hover:text-white hover:bg-violet-500/10 border border-violet-500/20 transition-all">
                 Clear All Filters
               </button>
@@ -149,41 +177,61 @@ function ProductsContent() {
                 <button onClick={handleClearFilters} className="btn-glow px-6 py-3"><span>Clear Filters</span></button>
               </div>
             ) : (
-              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
-                {filteredProducts.map((product) => (
-                  <Link key={product.id} href={`/products/${product.id}`} className="group">
-                    <div className="glass-card rounded-2xl overflow-hidden hover-lift cursor-pointer h-full">
-                      <div className="relative aspect-square overflow-hidden bg-white/2">
-                        <img src={product.image} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" onError={handleImageError} />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        {product.badge && (
-                          <span className={`absolute top-3 left-3 badge-glow badge-${product.badge === 'Best Seller' ? 'best' : product.badge === 'New' ? 'new' : product.badge === 'Sale' ? 'sale' : product.badge === 'Popular' ? 'popular' : 'trending'}`}>{product.badge}</span>
-                        )}
-                        {product.originalPrice && (
-                          <span className="absolute top-3 right-3 badge-glow badge-sale">-{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%</span>
-                        )}
-                      </div>
-                      <div className="p-4">
-                        <div className="flex items-center gap-1 mb-1.5">
-                          {[1, 2, 3, 4, 5].map(s => (
-                            <svg key={s} width="12" height="12" viewBox="0 0 24 24" fill={s <= Math.round(product.rating) ? '#fbbf24' : 'none'} stroke="#fbbf24" strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                          ))}
-                          <span className="text-[10px] text-white/25 ml-1">({product.reviews.toLocaleString()})</span>
-                        </div>
-                        <h3 className="font-semibold text-sm group-hover:text-violet-300 transition-colors line-clamp-2 mb-1">{product.name}</h3>
-                        <p className="text-white/25 text-xs line-clamp-1 mb-2">{product.category}</p>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl font-extrabold text-white">${product.price.toFixed(2)}</span>
+              <>
+                <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
+                  {filteredProducts.map((product) => (
+                    <Link key={product.id} href={`/products/${product.id}`} className="group">
+                      <div className="glass-card rounded-2xl overflow-hidden hover-lift cursor-pointer h-full">
+                        <div className="relative aspect-square overflow-hidden bg-white/2">
+                          <img src={product.image} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" onError={handleImageError} />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                          {product.badge && (
+                            <span className={`absolute top-3 left-3 badge-glow badge-${product.badge === 'Best Seller' ? 'best' : product.badge === 'New' ? 'new' : product.badge === 'Sale' ? 'sale' : product.badge === 'Popular' ? 'popular' : 'trending'}`}>{product.badge}</span>
+                          )}
                           {product.originalPrice && (
-                            <span className="text-sm text-white/20 line-through">${product.originalPrice.toFixed(2)}</span>
+                            <span className="absolute top-3 right-3 badge-glow badge-sale">-{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%</span>
                           )}
                         </div>
-                        <p className="text-green-400/70 text-xs mt-1.5">Free delivery</p>
+                        <div className="p-4">
+                          <div className="flex items-center gap-1 mb-1.5">
+                            {[1, 2, 3, 4, 5].map(s => (
+                              <svg key={s} width="12" height="12" viewBox="0 0 24 24" fill={s <= Math.round(product.rating) ? '#fbbf24' : 'none'} stroke="#fbbf24" strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            ))}
+                            <span className="text-[10px] text-white/25 ml-1">({formatNum(product.reviews)})</span>
+                          </div>
+                          <h3 className="font-semibold text-sm group-hover:text-violet-300 transition-colors line-clamp-2 mb-1">{product.name}</h3>
+                          <p className="text-white/25 text-xs line-clamp-1 mb-2">{product.category}</p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl font-extrabold text-white">${product.price.toFixed(2)}</span>
+                            {product.originalPrice && (
+                              <span className="text-sm text-white/20 line-through">${product.originalPrice.toFixed(2)}</span>
+                            )}
+                          </div>
+                          <p className="text-green-400/70 text-xs mt-1.5">Free delivery</p>
+                        </div>
                       </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+                    </Link>
+                  ))}
+                </div>
+
+                {hasMore && (
+                  <div className="mt-10 text-center">
+                    <button
+                      onClick={loadMore}
+                      disabled={loadingMore}
+                      className="btn-glow px-8 py-3 disabled:opacity-50"
+                    >
+                      <span>{loadingMore ? 'Loading...' : `Load More (${filteredProducts.length} of ${total.toLocaleString()})`}</span>
+                    </button>
+                  </div>
+                )}
+
+                {!hasMore && filteredProducts.length > 0 && (
+                  <div className="mt-10 text-center text-white/20 text-sm">
+                    Showing all {total.toLocaleString()} products
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
