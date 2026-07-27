@@ -118,12 +118,6 @@ export default function HomePage() {
         <Orb color="rgba(236, 72, 153, 0.08)" size={350} top="70%" left="20%" delay={4} />
 
         <div className="text-center max-w-5xl mx-auto relative z-10">
-          <div className="animate-fade-up stagger-1">
-            <span className="inline-block glass px-4 py-1.5 rounded-full text-xs font-semibold text-violet-300 tracking-wider uppercase mb-8">
-              Premium Shopping Experience
-            </span>
-          </div>
-
           <h1 className="animate-fade-up stagger-2" style={{ fontFamily: 'var(--font-syne)' }}>
             <span className="block text-6xl md:text-8xl lg:text-9xl font-extrabold leading-none tracking-tight">
               <span className="text-gradient">Discover</span>
