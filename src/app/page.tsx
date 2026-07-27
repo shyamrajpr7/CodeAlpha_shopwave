@@ -377,9 +377,11 @@ export default function HomePage() {
           <p className="text-white/35 mt-4 max-w-lg mx-auto relative z-10">Subscribe for exclusive drops, early access, and members-only deals.</p>
           <div className="flex flex-col sm:flex-row gap-3 mt-8 max-w-md mx-auto relative z-10">
             <input type="email" placeholder="your@email.com" className="input-dark flex-1" />
-            <button className="btn-glow px-8 whitespace-nowrap">
-              <span>Subscribe</span>
-            </button>
+            <Link href="/subscribe">
+              <button className="btn-glow px-8 whitespace-nowrap">
+                <span>Subscribe</span>
+              </button>
+            </Link>
           </div>
         </div>
       </section>
