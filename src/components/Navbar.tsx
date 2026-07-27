@@ -44,6 +44,7 @@ export default function Navbar() {
           {[
             { href: '/', label: 'Home' },
             { href: '/products', label: 'Products' },
+            ...(user ? [{ href: '/dashboard', label: 'Dashboard' }] : []),
             { href: '/orders', label: 'Orders' },
           ].map(l => (
             <Link key={l.href} href={l.href} className="px-4 py-2 rounded-xl text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-all duration-300">

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { handleImageError } from '@/lib/utils';
 
@@ -9,39 +9,57 @@ const allCategories = ['Audio', 'Peripherals', 'Video', 'Displays', 'Accessories
 
 function ProductsContent() {
   const searchParams = useSearchParams();
-  const initialCategory = searchParams.get('category') || '';
-  const initialSearch = searchParams.get('search') || '';
 
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [category, setCategory] = useState(initialCategory);
-  const [search, setSearch] = useState(initialSearch);
+  const [category, setCategory] = useState(searchParams.get('category') || '');
+  const [search, setSearch] = useState(searchParams.get('search') || '');
   const [sort, setSort] = useState('');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
   const [showFilters, setShowFilters] = useState(false);
 
-  const fetchProducts = () => {
+  const fetchProducts = useCallback(async (q: string, cat: string, s: string) => {
     setLoading(true);
     const params = new URLSearchParams();
-    if (category) params.set('category', category);
-    if (search) params.set('search', search);
-    if (sort) params.set('sort', sort);
+    if (cat) params.set('category', cat);
+    if (q) params.set('search', q);
+    if (s) params.set('sort', s);
     params.set('limit', '100');
-    fetch(`/api/products?${params}`).then(r => r.json()).then(d => { setProducts(d.products || []); setLoading(false); });
-  };
+    try {
+      const res = await fetch(`/api/products?${params}`);
+      const data = await res.json();
+      setProducts(data.products || []);
+    } catch {
+      setProducts([]);
+    }
+    setLoading(false);
+  }, []);
 
-  useEffect(() => { fetchProducts(); }, [category, search, sort]);
+  useEffect(() => {
+    const urlSearch = searchParams.get('search') || '';
+    const urlCategory = searchParams.get('category') || '';
+    if (urlSearch !== search) setSearch(urlSearch);
+    if (urlCategory !== category) setCategory(urlCategory);
+  }, [searchParams]);
 
-  useEffect(() => { setCategory(initialCategory); setSearch(initialSearch); }, [initialCategory, initialSearch]);
+  useEffect(() => {
+    fetchProducts(search, category, sort);
+  }, [search, category, sort, fetchProducts]);
 
   const filteredProducts = products.filter(p => p.price >= priceRange[0] && p.price <= priceRange[1]);
+
+  const handleClearFilters = () => {
+    setSearch('');
+    setCategory('');
+    setSort('');
+    setPriceRange([0, 1000]);
+  };
 
   return (
     <div className="min-h-screen pt-24 pb-12 px-4 relative">
       <div className="mesh-gradient" />
       <div className="max-w-7xl mx-auto animate-fade-up">
 
-        {/* Search Header */}
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-extrabold" style={{ fontFamily: 'var(--font-syne)' }}>
             <span className="text-gradient">{search ? `Results for "${search}"` : category || 'All Products'}</span>
@@ -49,9 +67,19 @@ function ProductsContent() {
           <p className="text-white/30 mt-2 text-sm">{filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found</p>
         </div>
 
+        <div className="relative mb-6 max-w-2xl">
+          <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search products, categories..."
+            className="input-dark pl-10 py-2.5 text-sm rounded-xl w-full"
+          />
+        </div>
+
         <div className="flex flex-col lg:flex-row gap-6">
 
-          {/* Sidebar Filters */}
           <div className={`${showFilters ? 'block' : 'hidden'} lg:block w-full lg:w-64 flex-shrink-0 space-y-5`}>
             <div className="glass-card rounded-2xl p-5">
               <h3 className="font-bold text-sm mb-4 text-white/60 uppercase tracking-wider">Categories</h3>
@@ -91,11 +119,15 @@ function ProductsContent() {
                 ))}
               </div>
             </div>
+
+            {(search || category || sort || priceRange[1] < 1000) && (
+              <button onClick={handleClearFilters} className="w-full px-4 py-2.5 rounded-xl text-sm font-medium text-violet-300 hover:text-white hover:bg-violet-500/10 border border-violet-500/20 transition-all">
+                Clear All Filters
+              </button>
+            )}
           </div>
 
-          {/* Product Grid */}
           <div className="flex-1">
-            {/* Mobile filter toggle */}
             <button onClick={() => setShowFilters(!showFilters)} className="lg:hidden mb-4 px-4 py-2 glass-card rounded-xl text-sm text-white/50 hover:text-white transition-all">
               {showFilters ? 'Hide Filters' : 'Show Filters'}
             </button>
@@ -114,11 +146,11 @@ function ProductsContent() {
                 <div className="text-6xl mb-4">🔍</div>
                 <h2 className="text-2xl font-bold mb-2">No products found</h2>
                 <p className="text-white/30 mb-6">Try adjusting your search or filters.</p>
-                <button onClick={() => { setSearch(''); setCategory(''); setSort(''); setPriceRange([0, 1000]); }} className="btn-glow px-6 py-3"><span>Clear Filters</span></button>
+                <button onClick={handleClearFilters} className="btn-glow px-6 py-3"><span>Clear Filters</span></button>
               </div>
             ) : (
               <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
-                {filteredProducts.map((product, i) => (
+                {filteredProducts.map((product) => (
                   <Link key={product.id} href={`/products/${product.id}`} className="group">
                     <div className="glass-card rounded-2xl overflow-hidden hover-lift cursor-pointer h-full">
                       <div className="relative aspect-square overflow-hidden bg-white/2">
