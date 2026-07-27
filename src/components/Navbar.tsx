@@ -12,6 +12,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
     fetch('/api/auth/[...nextauth]').then(r => r.json()).then(d => { if (d.user) setUser(d.user); }).catch(() => {});
@@ -44,7 +45,6 @@ export default function Navbar() {
           {[
             { href: '/', label: 'Home' },
             { href: '/products', label: 'Products' },
-            ...(user ? [{ href: '/dashboard', label: 'Dashboard' }] : []),
             { href: '/orders', label: 'Orders' },
           ].map(l => (
             <Link key={l.href} href={l.href} className="px-4 py-2 rounded-xl text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-all duration-300">
@@ -83,11 +83,48 @@ export default function Navbar() {
           </Link>
 
           {user ? (
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500/30 to-indigo-500/30 border border-violet-500/20 flex items-center justify-center text-sm font-bold text-violet-300">
+            <div className="relative">
+              <button onClick={() => setProfileOpen(!profileOpen)} className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-violet-500/20 hover:shadow-violet-500/40 transition-all duration-300 ring-2 ring-transparent hover:ring-violet-500/30">
                 {user.name?.charAt(0)?.toUpperCase()}
-              </div>
-              <button onClick={logout} className="text-sm text-white/40 hover:text-white/70 transition-colors font-medium">Logout</button>
+              </button>
+              {profileOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
+                  <div className="absolute right-0 top-12 w-56 glass rounded-2xl shadow-2xl shadow-black/30 border border-white/10 z-50 py-2 animate-scale-in">
+                    <div className="px-4 py-3 border-b border-white/5">
+                      <p className="text-sm font-semibold text-white">{user.name}</p>
+                      <p className="text-xs text-white/40 mt-0.5">{user.email}</p>
+                    </div>
+                    <div className="py-1">
+                      {[
+                        { href: '/dashboard', icon: '👤', label: 'My Account' },
+                        { href: '/orders', icon: '📦', label: 'My Orders' },
+                        { href: '/cart', icon: '🛒', label: 'My Cart' },
+                        { href: '/dashboard?tab=settings', icon: '⚙️', label: 'Settings' },
+                      ].map(item => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-all"
+                        >
+                          <span className="text-base">{item.icon}</span>
+                          <span className="font-medium">{item.label}</span>
+                        </Link>
+                      ))}
+                    </div>
+                    <div className="border-t border-white/5 pt-1">
+                      <button
+                        onClick={() => { setProfileOpen(false); logout(); }}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-400/70 hover:text-red-400 hover:bg-red-500/5 transition-all"
+                      >
+                        <span className="text-base">🚪</span>
+                        <span className="font-medium">Sign Out</span>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             <div className="flex items-center gap-2">
@@ -115,6 +152,14 @@ export default function Navbar() {
               {href === '/' ? 'Home' : href.slice(1).charAt(0).toUpperCase() + href.slice(2)}
             </Link>
           ))}
+          {user && (
+            <>
+              <div className="line-glow my-2" />
+              <Link href="/dashboard" onClick={() => setMobileOpen(false)} className="block px-4 py-3 rounded-xl text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-all">👤 My Account</Link>
+              <Link href="/dashboard?tab=settings" onClick={() => setMobileOpen(false)} className="block px-4 py-3 rounded-xl text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-all">⚙️ Settings</Link>
+              <button onClick={() => { setMobileOpen(false); logout(); }} className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-red-400/70 hover:text-red-400 hover:bg-red-500/5 transition-all">🚪 Sign Out</button>
+            </>
+          )}
           {!user && (
             <>
               <div className="line-glow my-2" />
