@@ -23,8 +23,7 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Login failed'); setLoading(false); return; }
-      router.push('/');
-      window.location.reload();
+      window.location.href = '/';
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err?.message || 'Something went wrong');
