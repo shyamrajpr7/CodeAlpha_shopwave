@@ -8,14 +8,19 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  email     String   @unique
-  password  String
-  role      String   @default("customer")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  orders    Order[]
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  email         String   @unique
+  password      String
+  role          String   @default("customer")
+  phone         String?
+  bio           String?
+  shopName      String?
+  sellerSince   DateTime?
+  isVerified    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  orders        Order[]
 }
 
 model Product {
@@ -33,6 +38,8 @@ model Product {
   stock         Int         @default(0)
   features      String
   color         String
+  sellerId      String?
+  listedBy      String      @default("shopwave")
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   orderItems    OrderItem[]
