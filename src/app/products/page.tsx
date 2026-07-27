@@ -200,7 +200,7 @@ function ProductsContent() {
                             <span className="text-[10px] text-white/25 ml-1">({formatNum(product.reviews)})</span>
                           </div>
                           <h3 className="font-semibold text-sm group-hover:text-violet-300 transition-colors line-clamp-2 mb-1">{product.name}</h3>
-                          <p className="text-white/25 text-xs line-clamp-1 mb-2">{product.category}</p>
+                          <p className="text-white/25 text-xs line-clamp-1 mb-2">{product.category}{product.listedBy === 'seller' ? ' · Sold by Seller' : ''}</p>
                           <div className="flex items-center gap-2">
                             <span className="text-xl font-extrabold text-white">${product.price.toFixed(2)}</span>
                             {product.originalPrice && (

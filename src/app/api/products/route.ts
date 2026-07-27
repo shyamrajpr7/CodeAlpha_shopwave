@@ -8,38 +8,48 @@ export async function GET(req: NextRequest) {
   const search = searchParams.get('search');
   const page = parseInt(searchParams.get('page') || '1');
   const limit = parseInt(searchParams.get('limit') || '24');
+  const sellerOnly = searchParams.get('sellerOnly');
+  const skip = (page - 1) * limit;
 
   const where: any = {};
   if (category && category !== 'All') {
     where.category = category;
   }
+  if (sellerOnly) {
+    where.listedBy = 'seller';
+  }
 
-  let products = await prisma.product.findMany({ where, orderBy: { createdAt: 'desc' } });
+  let orderBy: any = { createdAt: 'desc' };
+  if (sort === 'price-asc') orderBy = { price: 'asc' };
+  else if (sort === 'price-desc') orderBy = { price: 'desc' };
+  else if (sort === 'rating') orderBy = { rating: 'desc' };
+  else if (sort === 'reviews') orderBy = { reviews: 'desc' };
+
+  let products: any[];
+  let total: number;
 
   if (search) {
     const q = search.toLowerCase();
-    products = products.filter(p =>
+    const allProducts = await prisma.product.findMany({ where, orderBy });
+    const filtered = allProducts.filter(p =>
       p.name.toLowerCase().includes(q) ||
       p.description.toLowerCase().includes(q) ||
       p.category.toLowerCase().includes(q)
     );
+    total = filtered.length;
+    products = filtered.slice(skip, skip + limit);
+  } else {
+    [products, total] = await Promise.all([
+      prisma.product.findMany({ where, orderBy, skip, take: limit }),
+      prisma.product.count({ where }),
+    ]);
   }
 
-  if (sort === 'price-asc') products.sort((a, b) => a.price - b.price);
-  else if (sort === 'price-desc') products.sort((a, b) => b.price - a.price);
-  else if (sort === 'rating') products.sort((a, b) => b.rating - a.rating);
-  else if (sort === 'reviews') products.sort((a, b) => b.reviews - a.reviews);
-
-  const total = products.length;
-  const totalPages = Math.ceil(total / limit);
-  const skip = (page - 1) * limit;
-  const paged = products.slice(skip, skip + limit);
-
   return NextResponse.json({
-    products: paged,
+    products,
     total,
     page,
-    totalPages,
-    hasMore: skip + paged.length < total,
+    totalPages: Math.ceil(total / limit),
+    hasMore: skip + products.length < total,
   });
 }
